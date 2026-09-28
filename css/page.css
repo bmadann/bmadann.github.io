@@ -53,7 +53,7 @@
 .hero-title {
   margin: .2rem 0 .3rem;
   font-family: var(--font-title);
-  font-weight: 700;
+  font-weight: 400;
   font-size: clamp(2.4rem, 7vw, 4.4rem);
   line-height: 1.08;
   background: linear-gradient(180deg, #fff1bf, #e3b94f 55%, #9c6f1c);

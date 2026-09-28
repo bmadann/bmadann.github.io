@@ -1,30 +1,11 @@
 # The Round Table: Benjamin Madan's portfolio
 
-A static site for GitHub Pages (`bmadann.github.io`). No build step: push to `main` and it's live.
+My personal portfolio, live at **[bmadann.github.io](https://bmadann.github.io)**.
 
-## Preview locally
+The home page is styled after the Knights of the Round Table: a wooden table in a stone hall, with nine magical swords pointed at its centre. Each sword is tied to an element (wind, fire, water, wood, earth, space, machinery, glass and time) and leads to a different part of the site:
 
-```sh
-python3 -m http.server 8000   # then open http://localhost:8000
-```
+- **Resume** and **LinkedIn**
+- **Projects:** one page for each of my GitHub projects, with an explanation of what it does and its source code
+- **Class Work:** coursework from my classes, with each piece of code explained section by section
 
-## Editing content
-
-Almost everything lives in [`js/data.js`](js/data.js):
-
-- `OWNER.linkedin`: your LinkedIn URL (the Wind sword).
-- `SWORDS`: the nine swords, clockwise from the top: element, label and destination.
-- `PROJECTS`: project pages (`project.html?p=<id>`). Code tabs are fetched live from GitHub, so listing a file `path` is enough.
-- `CLASSWORK`: class work shown in full on `classwork.html`. Each entry has an intro and a list of sections (explanation + code file); the code files live under `classwork/<entry>/`.
-
-**Resume:** put a PDF at `assets/resume.pdf` and the Resume page will embed it.
-
-## Layout
-
-| Path | Purpose |
-| --- | --- |
-| `index.html`, `js/table.js`, `css/table.css` | The Round Table home page |
-| `js/swords.js` | SVG art for the nine elemental swords |
-| `project.html`, `resume.html`, `classwork.html`, `js/page.js`, `css/page.css` | Content pages |
-| `css/realm.css` | Shared palette, stone hall background and sword animations |
-| `assets/` | Stone texture, banners, favicon (and your `resume.pdf`) |
+The site is built with plain HTML, CSS and JavaScript, and the swords are hand-drawn in SVG.

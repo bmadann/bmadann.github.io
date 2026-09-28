@@ -304,8 +304,8 @@
       <path d="M60,6 C72,4 78,12 88,12 C98,14 104,24 108,32 C114,42 112,52 114,60 C116,72 108,78 106,88 C102,98 92,104 84,108 C74,114 66,112 58,114 C46,116 40,108 30,104 C20,100 14,92 10,82 C6,72 8,64 6,56 C4,44 12,38 16,28 C20,18 30,14 38,10 C46,6 52,8 60,6 Z" fill="url(#wax)"/>
       <circle cx="60" cy="60" r="36" fill="none" stroke="#5a0814" stroke-width="3"/>
       <circle cx="60" cy="60" r="31" fill="none" stroke="#e46a7c" stroke-width="1" opacity=".5"/>
-      <text x="60" y="76" text-anchor="middle" font-family="UnifrakturCook, serif" font-size="44" fill="#5a0814">B</text>
-      <text x="61.5" y="74.5" text-anchor="middle" font-family="UnifrakturCook, serif" font-size="44" fill="#e46a7c" opacity=".45">B</text>
+      <text x="60" y="76" text-anchor="middle" font-family="Pirata One, serif" font-size="44" fill="#5a0814">B</text>
+      <text x="61.5" y="74.5" text-anchor="middle" font-family="Pirata One, serif" font-size="44" fill="#e46a7c" opacity=".45">B</text>
     </svg>`;
   }
 
