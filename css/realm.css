@@ -1,0 +1,186 @@
+/*
+ * Shared styles for every page: palette, stone hall background, type,
+ * and the animations used by the swords.
+ */
+
+:root {
+  --purple-deep: #1c0826;
+  --purple: #3a1450;
+  --purple-bright: #6b2d8a;
+  --crimson-deep: #3d0610;
+  --crimson: #7a1020;
+  --crimson-bright: #a3142c;
+  --gold: #c9a13b;
+  --gold-bright: #ecc96a;
+  --gold-dark: #7a5a14;
+  --parchment: #efe3c4;
+  --parchment-dim: #c8bb9c;
+  --ink: #140b06;
+  --stone-dark: #1d1b1a;
+
+  --font-title: "UnifrakturCook", "Old English Text MT", serif;
+  --font-caps: "Cinzel", "Trajan Pro", serif;
+  --font-body: "IM Fell English", "Garamond", Georgia, serif;
+  --font-code: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --accent: var(--gold-bright);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--stone-dark); }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--parchment);
+  font-family: var(--font-body);
+  font-size: 1.12rem;
+  line-height: 1.6;
+  background-color: var(--stone-dark);
+  background-image:
+    radial-gradient(ellipse at 50% 42%, transparent 30%, rgba(8, 4, 6, .55) 75%, rgba(4, 2, 3, .9) 100%),
+    radial-gradient(ellipse 55% 45% at 0% 0%, rgba(107, 45, 138, .38), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 100% 0%, rgba(163, 20, 44, .32), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 105%, rgba(201, 161, 59, .14), transparent 70%),
+    url("../assets/stone.svg");
+  background-size: auto, auto, auto, auto, 420px;
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  overflow-x: hidden;
+}
+
+/* Torchlight: two warm glows that flicker gently at the edges of the hall. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  top: 18vh;
+  width: 46vmax;
+  height: 46vmax;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 170, 70, .16), rgba(255, 120, 40, .05) 45%, transparent 70%);
+  animation: torch 3.8s ease-in-out infinite alternate;
+  z-index: 0;
+}
+body::before { left: -23vmax; }
+body::after { right: -23vmax; animation-delay: -1.9s; }
+
+@keyframes torch {
+  0%   { opacity: .75; transform: scale(1); }
+  30%  { opacity: 1;   transform: scale(1.03); }
+  55%  { opacity: .82; transform: scale(.99); }
+  80%  { opacity: .95; transform: scale(1.02); }
+  100% { opacity: .8;  transform: scale(1); }
+}
+
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+
+::selection { background: var(--purple-bright); color: #fff; }
+
+/* ----------------------------------------------------------- banners */
+
+.banner {
+  position: fixed;
+  top: 0;
+  width: clamp(70px, 7vw, 120px);
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, .65));
+  transform-origin: top center;
+  animation: sway 7s ease-in-out infinite alternate;
+}
+.banner--left { left: clamp(14px, 3vw, 60px); }
+.banner--right { right: clamp(14px, 3vw, 60px); animation-delay: -3.5s; }
+@keyframes sway { from { transform: rotate(-.6deg); } to { transform: rotate(.6deg); } }
+@media (max-width: 1100px) { .banner { display: none; } }
+
+/* ------------------------------------------------------ sword effects */
+
+.fx-flicker { transform-box: fill-box; transform-origin: 50% 100%; animation: flicker .9s ease-in-out infinite alternate; }
+@keyframes flicker {
+  0% { transform: scale(1, 1); opacity: .85; }
+  40% { transform: scale(.9, 1.15); opacity: 1; }
+  100% { transform: scale(1.08, .88); opacity: .7; }
+}
+
+.fx-rise { animation: rise 3s linear infinite; }
+.fx-rise.fx-slow { animation-duration: 4.4s; }
+@keyframes rise {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-120px); opacity: 0; }
+}
+
+.fx-pulse { animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+.fx-flow { animation: flow 2.2s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -28; } }
+
+.fx-wisp { stroke-dasharray: 18 60; animation: wisp 3.3s ease-in-out infinite; }
+@keyframes wisp {
+  0% { stroke-dashoffset: 30; opacity: 0; }
+  30% { opacity: .9; }
+  100% { stroke-dashoffset: -60; opacity: 0; }
+}
+
+.fx-leaf { animation: leaf 4.4s ease-in-out infinite; }
+@keyframes leaf {
+  0% { opacity: 0; translate: 0 0; rotate: 0deg; }
+  20% { opacity: 1; }
+  100% { opacity: 0; translate: 16px 26px; rotate: 160deg; }
+}
+
+.fx-bob { animation: bob 3.2s ease-in-out infinite alternate; }
+@keyframes bob { from { translate: 0 -3px; } to { translate: 0 3px; } }
+
+.fx-twinkle { transform-box: fill-box; transform-origin: center; animation: twinkle 2.2s ease-in-out infinite; }
+@keyframes twinkle { 0%, 100% { opacity: .25; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+
+.fx-glint { transform-box: fill-box; transform-origin: center; animation: glint 3.4s ease-in-out infinite; }
+@keyframes glint { 0%, 70%, 100% { opacity: 0; transform: scale(.2) rotate(0deg); } 80% { opacity: 1; transform: scale(1) rotate(45deg); } }
+
+.fx-sheen { animation: sheen 3.8s ease-in-out infinite; }
+@keyframes sheen { 0% { transform: translateY(0); } 70%, 100% { transform: translateY(220px); } }
+
+.fx-spark { animation: spark 1.8s steps(1) infinite; }
+@keyframes spark { 0%, 100% { opacity: 0; } 10% { opacity: 1; } 22% { opacity: 0; } }
+
+.fx-spin { transform-box: fill-box; transform-origin: center; animation: spin 7s linear infinite; }
+.fx-spin.fx-rev { animation-direction: reverse; }
+.fx-spin.fx-slow { animation-duration: 14s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fx-orbit { transform-origin: 0 224px; animation: spin 5s linear infinite; }
+
+.fx-hand-slow { transform-origin: 0 156px; animation: spin 24s linear infinite; }
+.fx-hand-fast { transform-origin: 0 156px; animation: spin 4s linear infinite; }
+
+.fx-sand-top { transform-box: fill-box; transform-origin: 50% 100%; animation: sandTop 6s linear infinite; }
+.fx-sand-bottom { transform-box: fill-box; transform-origin: 50% 100%; animation: sandBottom 6s linear infinite; }
+.fx-trickle { animation: flow 0.6s linear infinite; }
+@keyframes sandTop { from { transform: scaleY(1); } to { transform: scaleY(.1); } }
+@keyframes sandBottom { from { transform: scaleY(.1); } to { transform: scaleY(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ----------------------------------------------------------- footer */
+
+.site-footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 2.5rem 16px 2rem;
+  font-family: var(--font-caps);
+  font-size: .8rem;
+  letter-spacing: .12em;
+  color: var(--parchment-dim);
+}
+.site-footer a { color: var(--gold-bright); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+.site-footer .sep { margin: 0 .6em; color: var(--gold-dark); }

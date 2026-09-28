@@ -1,0 +1,150 @@
+/* The Round Table (home page). */
+
+.hall {
+  position: relative;
+  z-index: 2;
+  padding: 3vh 16px 0;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.round-table {
+  position: relative;
+  width: min(100%, 92vh, 980px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.layer-table, .layer-title { pointer-events: none; }
+.layer-swords { will-change: transform; }
+
+/* Rim engraving and centre text. */
+.rim-text {
+  font-family: var(--font-caps);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  fill: #3d2a06;
+  transition: fill .3s;
+}
+.rim-text.is-active { fill: #6b0f22; }
+
+.motto {
+  font-family: var(--font-caps);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  fill: #c9a13b;
+  opacity: .85;
+}
+
+.title-kicker {
+  font-family: var(--font-caps);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  fill: var(--gold-bright);
+}
+.title-name {
+  font-family: var(--font-title);
+  font-size: 64px;
+  fill: url(#titleGold);
+  stroke: #2a0f35;
+  stroke-width: 1.2px;
+  paint-order: stroke;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .7));
+}
+.title-choice {
+  font-family: var(--font-caps);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  fill: var(--parchment);
+  transition: fill .25s;
+}
+
+/* Swords. */
+.sword { cursor: pointer; outline: none; }
+.sword-lift { transition: transform .35s cubic-bezier(.3, 1.4, .5, 1), opacity .3s; }
+.sword-aura { opacity: .2; transition: opacity .35s; }
+.sword.is-active .sword-lift { transform: translateY(-12px); }
+.sword.is-active .sword-aura { opacity: 1; }
+.has-active .sword:not(.is-active) .sword-lift { opacity: .55; }
+
+/* Chosen: the sword plunges toward the centre and the medallion flares. */
+.sword.is-chosen .sword-lift {
+  transform: translateY(-40px);
+  transition: transform .55s cubic-bezier(.5, 0, .2, 1);
+}
+.is-chosen .sword:not(.is-chosen) .sword-lift { opacity: .25; }
+.flash-stop { stop-color: var(--flash, #fff); }
+.centre-flash { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.is-chosen .centre-flash { animation: flare .85s ease-out forwards; }
+@keyframes flare {
+  0% { opacity: 0; transform: scale(.3); }
+  45% { opacity: 1; transform: scale(1); }
+  100% { opacity: .9; transform: scale(1.25); }
+}
+
+/* The roll of blades beneath the table: a readable index, and a way in on touch screens. */
+.blade-roll-wrap {
+  max-width: 980px;
+  margin: 3.5vh auto 0;
+  text-align: center;
+}
+.roll-heading {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: .95rem;
+  letter-spacing: .35em;
+  color: var(--gold-bright);
+  margin: 0 0 .9rem;
+}
+.roll-heading::before, .roll-heading::after { content: "✦"; margin: 0 .8em; color: var(--gold-dark); }
+.blade-roll {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+.blade-roll a {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  padding: .6rem .8rem;
+  text-decoration: none;
+  color: var(--parchment);
+  background: linear-gradient(180deg, rgba(58, 20, 80, .82), rgba(28, 8, 38, .9));
+  border: 1px solid rgba(201, 161, 59, .45);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .35), 0 6px 14px rgba(0, 0, 0, .4);
+  transition: border-color .25s, box-shadow .25s, transform .25s;
+}
+.blade-roll a:hover, .blade-roll a.is-active {
+  border-color: var(--glow);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .35), 0 0 18px -2px var(--glow);
+  transform: translateY(-2px);
+}
+.roll-element {
+  font-family: var(--font-caps);
+  font-size: .72rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--glow);
+}
+.roll-title { font-size: 1.08rem; }
