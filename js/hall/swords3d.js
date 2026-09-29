@@ -949,8 +949,8 @@ export function createSword(element, glow, index, outward) {
   const dir = outward.clone().applyAxisAngle(v3(0, 1, 0), yaw).normalize();
   const axis = v3(dir.z, 0, -dir.x).normalize();
   s.tilt.quaternion.setFromAxisAngle(axis, THREE.MathUtils.degToRad(40 + r() * 12));
-  // turn the blade's broad face outward (width along the tilt axis), give or take a little
-  s.sword.rotation.y = Math.atan2(-axis.z, axis.x) + (r() - 0.5) * 0.5;
+  // set the blade on its side: edges face up and down, flats face sideways (give or take a little)
+  s.sword.rotation.y = Math.atan2(-axis.z, axis.x) + Math.PI / 2 + (r() - 0.5) * 0.3;
 
   // sigil and shockwave lie flat on the table
   s.sigilMat = sigilMaterial(SIGIL_STYLE[element], glow);
