@@ -6,6 +6,7 @@
  * The fireplace is on the back wall (z = -10); the camera starts at +z.
  */
 import * as THREE from "three";
+import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
 import { rng, taperTube, limb, MergeBuilder, mat, v3, TAU, makeCanvas, canvasTexture } from "./util.js";
 import { stoneWall, flagstones, darkWood, emberLog, rug, bannerCloth, windowCookie } from "./textures.js";
 import { flameMaterial, moonbeamMaterial, nightSkyMaterial, particleMaterial, particles, PARTICLE_MODES } from "./shaders.js";
@@ -13,7 +14,7 @@ import { flameMaterial, moonbeamMaterial, nightSkyMaterial, particleMaterial, pa
 export const HALF = 10;
 export const HEIGHT = 10;
 
-export function createRoom() {
+export function createRoom({ githubUser = "" } = {}) {
   const room = new THREE.Group();
   const animated = [];          // callbacks run every frame: (t, dt) => void
   const flames = [];            // flame materials (time uniform)
@@ -186,8 +187,12 @@ export function createRoom() {
     logMat.emissiveIntensity = 1.1 + f * 0.8;
   });
 
-  /* ----------------------------------------------------------- lion head */
-  room.add(lionHead(gold, [0, 6.25, -HALF + 1.25]));
+  /* ------------------------------------------------------ GitHub crest */
+  const crest = githubCrest(gold, githubUser);
+  crest.group.position.set(0, 6.25, -HALF + 1.25);
+  crest.group.rotation.x = 0.16; // tipped forward so the chandelier's reflection falls to the floor
+  room.add(crest.group);
+  animated.push(crest.update);
 
   /* ---------------------------------------------------- window & moonlight */
   const win = new THREE.Group();
@@ -306,73 +311,133 @@ export function createRoom() {
   lights.chandelier = ch.light;
   animated.push((t) => { ch.light.intensity = 38 * (0.93 + 0.04 * Math.sin(t * 5.1) + 0.03 * Math.sin(t * 11.7)); });
 
-  return { room, animated, flames, lights };
+  return { room, animated, flames, lights, crest };
 }
 
 /* ======================================================================= */
 
-/** Gilded lion head mounted on a crimson shield, a ring through its jaws. */
-function lionHead(gold, pos) {
-  const b = new MergeBuilder();
-  const r = rng(17);
-  const darkGold = new THREE.MeshStandardMaterial({ color: 0x9a7030, metalness: 1, roughness: 0.38 });
-  const shieldRed = new THREE.MeshStandardMaterial({ color: 0x6a0c18, roughness: 0.6, metalness: 0.2 });
-  const ivory = new THREE.MeshStandardMaterial({ color: 0xf0e6cc, roughness: 0.4 });
-  const mouth = new THREE.MeshStandardMaterial({ color: 0x2a0406, roughness: 0.8 });
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffb030, emissive: 0xff8a10, emissiveIntensity: 3 });
+/* The GitHub mark (Octicons "mark-github", 16×16 units). */
+const GITHUB_MARK = "M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z";
 
-  // shield plaque
+/**
+ * A gilded GitHub mark set in crimson enamel on a heraldic shield, framed by a
+ * sunburst, beaded rings, a laurel wreath and a ribbon bearing the username.
+ * Returns the group, an invisible hit disc for clicks, and a per-frame update.
+ */
+function githubCrest(gold, user) {
+  const group = new THREE.Group();
+  const b = new MergeBuilder();
+  const darkGold = new THREE.MeshStandardMaterial({ color: 0x9a7030, metalness: 1, roughness: 0.38 });
+  const brightGold = new THREE.MeshStandardMaterial({ color: 0xf0c060, metalness: 1, roughness: 0.42, envMapIntensity: 0.55, emissive: 0x6a3a08, emissiveIntensity: 0.12 });
+  const shieldRed = new THREE.MeshStandardMaterial({ color: 0x6a0c18, roughness: 0.6, metalness: 0.2 });
+  const enamel = new THREE.MeshPhysicalMaterial({ color: 0x7a1020, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 });
+
+  // shield plaque with a gold rim
   const sh = new THREE.Shape();
   sh.moveTo(-0.95, 1.05); sh.lineTo(0.95, 1.05); sh.lineTo(0.95, 0);
   sh.quadraticCurveTo(0.9, -0.85, 0, -1.25); sh.quadraticCurveTo(-0.9, -0.85, -0.95, 0); sh.closePath();
   b.add(new THREE.ExtrudeGeometry(sh, { depth: 0.08, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 3 }), shieldRed);
   const rim = new THREE.Shape(sh.getPoints(48));
-  const inner = new THREE.Path(sh.getPoints(48).map((p) => p.clone().multiplyScalar(0.9)).reverse());
-  rim.holes.push(inner);
+  rim.holes.push(new THREE.Path(sh.getPoints(48).map((p) => p.clone().multiplyScalar(0.9)).reverse()));
   b.add(new THREE.ExtrudeGeometry(rim, { depth: 0.14, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2 }), gold);
 
-  // mane: layered locks sweeping outward, tips curling back toward the wall
-  const Z = 0.12;
-  [[0.62, 26, 0.07, -0.02], [0.5, 22, 0.075, 0.07], [0.4, 18, 0.07, 0.15]].forEach(([rad, n, thick, z0], ring) => {
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * TAU + ring * 0.11 + (r() - 0.5) * 0.06;
-      const sw = 0.1 + r() * 0.08;
-      const d = (ang, k) => [Math.cos(ang) * rad * k, Math.sin(ang) * rad * k * 1.1 - 0.04];
-      const [x0, y0] = d(a, 0.72), [x1, y1] = d(a + sw * 0.4, 1.05), [x2, y2] = d(a + sw, 1.32), [x3, y3] = d(a + sw * 0.6, 1.5);
-      const pts = [v3(x0, y0, Z + z0 + 0.16), v3(x1, y1, Z + z0 + 0.14), v3(x2, y2, Z + z0 + 0.05), v3(x3, y3, Z + z0 - 0.06)];
-      b.add(taperTube(pts, (t) => thick * (1 - t * 0.8) + 0.008, { tubular: 24, radial: 8 }), ring === 1 ? darkGold : gold);
-    }
+  const C = [0, 0.08];      // medallion centre on the shield
+  const Z = 0.14;           // front face of the shield
+  // sunburst behind the medallion: alternating long and short rays
+  for (let i = 0; i < 32; i++) {
+    const a = (i / 32) * TAU, long = i % 2 === 0;
+    const ray = new THREE.Shape();
+    const len = long ? 0.9 : 0.78, w = long ? 0.05 : 0.03;
+    ray.moveTo(0.55, -w); ray.lineTo(len, 0); ray.lineTo(0.55, w); ray.closePath();
+    b.add(new THREE.ExtrudeGeometry(ray, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.004, bevelSegments: 1 }), long ? gold : darkGold, mat([C[0], C[1], Z], [0, 0, a]));
+  }
+  // medallion: enamel field, rings of gold and a beaded border
+  b.add(new THREE.CylinderGeometry(0.64, 0.64, 0.05, 96), enamel, mat([C[0], C[1], Z + 0.03], [Math.PI / 2, 0, 0]));
+  b.add(new THREE.TorusGeometry(0.66, 0.035, 16, 120), gold, mat([C[0], C[1], Z + 0.06]));
+  b.add(new THREE.TorusGeometry(0.79, 0.016, 10, 120), gold, mat([C[0], C[1], Z + 0.05]));
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * TAU;
+    b.add(new THREE.SphereGeometry(0.018, 10, 8), i % 5 ? gold : brightGold, mat([C[0] + Math.cos(a) * 0.725, C[1] + Math.sin(a) * 0.725, Z + 0.06]));
+  }
+  // the GitHub mark, extruded in gold
+  const shapes = SVGLoader.createShapes(new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path transform="matrix(1 0 0 -1 0 16)" d="${GITHUB_MARK}"/></svg>`).paths[0]);
+  const S = 0.075; // 16 units → 1.2 m across
+  shapes.forEach((shape) => {
+    // flipped to y-up in the SVG itself; bevel size is in the mark's 16-unit space
+    const g = new THREE.ExtrudeGeometry(shape, { depth: 0.035, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.16, bevelSegments: 4, curveSegments: 24 });
+    g.translate(-8, -8, 0);
+    b.add(g, brightGold, mat([C[0], C[1], Z + 0.075], [0, 0, 0], [S, S, 1]));
   });
-  // beard beneath the jaw
-  for (let i = 0; i < 9; i++) {
-    const x = (i - 4) * 0.045, len = 0.22 - Math.abs(i - 4) * 0.025;
-    b.add(taperTube([v3(x, -0.36, Z + 0.4), v3(x * 1.2, -0.46, Z + 0.38), v3(x * 1.1, -0.36 - len - 0.1, Z + 0.3)], (t) => 0.035 * (1 - t) + 0.006, { tubular: 16, radial: 8 }), i % 2 ? darkGold : gold);
+  // laurel wreath climbing both sides from the base
+  const leaf = new THREE.Shape();
+  leaf.moveTo(0, 0); leaf.quadraticCurveTo(0.05, 0.04, 0, 0.13); leaf.quadraticCurveTo(-0.05, 0.04, 0, 0);
+  const leafGeo = new THREE.ExtrudeGeometry(leaf, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.004, bevelSegments: 2 });
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 12; i++) {
+      const a = -Math.PI / 2 + side * (0.25 + i * 0.16);
+      const r = 0.87;
+      const x = C[0] + Math.cos(a) * r, y = C[1] + Math.sin(a) * r;
+      const tangent = a + side * Math.PI / 2;
+      for (const off of [-0.55, 0.55]) {
+        b.add(leafGeo, i % 2 ? gold : darkGold, mat([x, y, Z + 0.04], [0, 0, tangent - Math.PI / 2 + off * side], 1 - i * 0.03));
+      }
+    }
+    b.add(taperTube(Array.from({ length: 13 }, (_, i) => { const a = -Math.PI / 2 + side * (0.2 + i * 0.16); return v3(C[0] + Math.cos(a) * 0.87, C[1] + Math.sin(a) * 0.87, Z + 0.04); }), 0.01, { tubular: 60, radial: 6 }), darkGold);
   }
+  // gems at the cardinal points of the border
+  const ruby = new THREE.MeshPhysicalMaterial({ color: 0xc0142c, emissive: 0x8a0a1a, emissiveIntensity: 0.6, roughness: 0.05, clearcoat: 1, flatShading: true });
+  const sapphire = new THREE.MeshPhysicalMaterial({ color: 0x1a4aff, emissive: 0x0a2a9a, emissiveIntensity: 0.6, roughness: 0.05, clearcoat: 1, flatShading: true });
+  [[0, 1], [1, 0], [-1, 0]].forEach(([dx, dy], i) => {
+    const p = [C[0] + dx * 0.79, C[1] + dy * 0.79, Z + 0.08];
+    b.add(new THREE.TorusGeometry(0.05, 0.012, 8, 24), gold, mat(p));
+    b.add(new THREE.OctahedronGeometry(0.045), i === 0 ? ruby : sapphire, mat(p, [0, 0, Math.PI / 4], [1, 1, 0.6]));
+  });
+  // crown atop the shield
+  const crown = new THREE.Shape();
+  crown.moveTo(-0.3, 0); crown.lineTo(-0.34, 0.2); crown.lineTo(-0.17, 0.09); crown.lineTo(0, 0.27); crown.lineTo(0.17, 0.09); crown.lineTo(0.34, 0.2); crown.lineTo(0.3, 0); crown.closePath();
+  b.add(new THREE.ExtrudeGeometry(crown, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.012, bevelSegments: 2 }), gold, mat([0, 1.08, 0.04]));
+  for (const [x, y] of [[-0.34, 1.3], [0, 1.37], [0.34, 1.3]]) b.add(new THREE.SphereGeometry(0.035, 12, 10), brightGold, mat([x, y, 0.07]));
+  b.add(new THREE.OctahedronGeometry(0.04), ruby, mat([0, 1.16, 0.12]));
+  group.add(b.build());
 
-  const S = (geo, m, p, s = [1, 1, 1], rot = [0, 0, 0]) => b.add(geo, m, mat(p, rot, s));
-  const sphere = (rr, w = 28, h = 20) => new THREE.SphereGeometry(rr, w, h);
-  S(sphere(0.36), gold, [0, 0.04, Z + 0.26], [1, 1.05, 0.9]);                       // skull
-  S(sphere(0.2), gold, [0, 0.2, Z + 0.46], [1.2, 0.55, 0.7]);                       // brow mass
-  S(sphere(0.19), gold, [0, -0.13, Z + 0.54], [1.05, 0.85, 1.05]);                  // muzzle
-  S(sphere(0.11), gold, [0, 0.04, Z + 0.62], [0.55, 1.2, 0.6], [0.35, 0, 0]);       // bridge of the nose
-  S(sphere(0.085), darkGold, [0, -0.04, Z + 0.72], [1.5, 0.85, 0.9]);               // nose
-  for (const sx of [-1, 1]) {
-    S(sphere(0.15), gold, [sx * 0.16, -0.16, Z + 0.5], [1, 0.85, 1]);               // whisker pads
-    S(new THREE.CapsuleGeometry(0.045, 0.16, 6, 12), gold, [sx * 0.13, 0.17, Z + 0.56], [1, 1, 1], [0, 0, sx * 1.25]); // brow ridge
-    S(sphere(0.05, 18, 14), darkGold, [sx * 0.13, 0.08, Z + 0.55], [1.2, 0.8, 0.8]); // eye socket
-    S(sphere(0.036, 16, 12), eyeMat, [sx * 0.13, 0.085, Z + 0.585]);                 // eyes
-    S(sphere(0.1), gold, [sx * 0.3, 0.33, Z + 0.2], [1, 1, 0.5]);                    // ears
-    S(sphere(0.055), darkGold, [sx * 0.3, 0.33, Z + 0.25], [1, 1, 0.4]);
-    S(new THREE.ConeGeometry(0.02, 0.1, 8), ivory, [sx * 0.07, -0.3, Z + 0.64], [1, 1, 1], [Math.PI, 0, 0]); // upper fangs
-    S(new THREE.ConeGeometry(0.016, 0.07, 8), ivory, [sx * 0.065, -0.41, Z + 0.6]);  // lower fangs
-    for (let k = 0; k < 3; k++) S(sphere(0.012, 8, 6), darkGold, [sx * (0.12 + k * 0.045), -0.13 - k * 0.025, Z + 0.66 - k * 0.02]); // whisker dots
-  }
-  S(sphere(0.12), mouth, [0, -0.33, Z + 0.55], [1.1, 0.75, 0.9]);                  // open maw
-  S(sphere(0.13), gold, [0, -0.45, Z + 0.48], [1, 0.5, 0.95]);                     // lower jaw
-  S(new THREE.TorusGeometry(0.17, 0.026, 12, 40), gold, [0, -0.6, Z + 0.62], [1, 1, 1], [0.35, 0, 0]); // ring
-  const g = b.build();
-  g.position.set(...pos);
-  return g;
+  // ribbon beneath bearing the username
+  const [cv, ctx] = makeCanvas(1024, 160);
+  ctx.fillStyle = "#6a0c18";
+  ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(1024, 20); ctx.lineTo(960, 80); ctx.lineTo(1024, 140); ctx.lineTo(0, 140); ctx.lineTo(64, 80); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#e8c46a"; ctx.lineWidth = 6; ctx.stroke();
+  ctx.fillStyle = "#f0cf6e"; ctx.font = "700 64px Cinzel, serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(`GITHUB · ${user.toUpperCase()}`, 512, 84);
+  const ribbonGeo = new THREE.CylinderGeometry(3, 3, 0.28, 48, 1, true, -0.28, 0.56);
+  const ribbon = new THREE.Mesh(ribbonGeo, new THREE.MeshStandardMaterial({ map: canvasTexture(cv, { wrap: false }), transparent: true, alphaTest: 0.3, roughness: 0.7, side: THREE.DoubleSide }));
+  ribbon.position.set(0, -1.02, 0.28 - 3);
+  ribbon.castShadow = true;
+  group.add(ribbon);
+
+  // halo that blooms on hover
+  const [hc, hx] = makeCanvas(256);
+  const hg = hx.createRadialGradient(128, 128, 20, 128, 128, 128);
+  hg.addColorStop(0, "rgba(255,200,110,.35)"); hg.addColorStop(0.55, "rgba(255,160,60,.18)"); hg.addColorStop(1, "rgba(255,120,40,0)");
+  hx.fillStyle = hg; hx.fillRect(0, 0, 256, 256);
+  const haloMat = new THREE.MeshBasicMaterial({ map: canvasTexture(hc, { wrap: false }), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.05 });
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), haloMat);
+  halo.position.set(C[0], C[1], Z - 0.02);
+  group.add(halo);
+
+  const hit = new THREE.Mesh(new THREE.CircleGeometry(1.0, 32), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.set(C[0], C[1], Z + 0.3);
+  group.add(hit);
+
+  const focus = new THREE.Object3D();
+  focus.position.set(C[0], C[1], Z);
+  group.add(focus);
+
+  let glow = 0, glowTarget = 0;
+  const update = (t, dt = 0.016) => {
+    glow += (glowTarget - glow) * Math.min(1, dt * 5);
+    brightGold.emissiveIntensity = 0.12 + glow * 0.5 + 0.04 * Math.sin(t * 2);
+    haloMat.opacity = 0.05 + glow * 0.6;
+  };
+  return { group, hit, focus, update, setHover: (on) => (glowTarget = on ? 1 : 0) };
 }
 
 /** Heraldic shield with crossed swords, hung opposite the window. */

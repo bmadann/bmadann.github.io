@@ -87,7 +87,7 @@ scene.add(new THREE.AmbientLight(0x251820, 0.4));
 await document.fonts.ready;
 await Promise.all(["700 40px Cinzel", "400 40px 'Pirata One'"].map((f) => document.fonts.load(f).catch(() => {})));
 
-const { room, animated, flames, lights } = createRoom();
+const { room, animated, flames, lights, crest } = createRoom({ githubUser: OWNER.github });
 scene.add(room);
 
 const table = await createTable(SWORDS, ELEMENTS, OWNER.name);
@@ -161,7 +161,7 @@ let armourIndex = 0;
 const VIEWS = {
   table: () => [HOME.pos, HOME.target],
   above: () => [new THREE.Vector3(0, 6.1, 1.5), new THREE.Vector3(0, TABLE_TOP, 0.1)],
-  hearth: () => [new THREE.Vector3(0, 3.6, -2.6), new THREE.Vector3(0, 4.3, -HALF)],
+  hearth: () => [new THREE.Vector3(0, 4.3, -2.4), new THREE.Vector3(0, 4.9, -HALF)],
   window: () => [new THREE.Vector3(-2.6, 2.6, -4.2), new THREE.Vector3(-6, 4.2, -HALF)],
   armour: () => {
     const [x, z] = armourCorners[armourIndex++ % 4];
@@ -213,6 +213,41 @@ function pick(event) {
   const hit = raycaster.intersectObjects(hitTargets, false)[0];
   return hit ? hit.object.userData.sword : null;
 }
+
+/* The GitHub crest above the mantel: glows on hover, opens GitHub when chosen. */
+const GITHUB_URL = `https://github.com/${OWNER.github}`;
+let crestHovered = false;
+function pickCrest() {
+  const hit = raycaster.intersectObject(crest.hit, false)[0];
+  const sw = raycaster.intersectObjects(hitTargets, false)[0];
+  return !!hit && (!sw || hit.distance < sw.distance);
+}
+function setCrestHover(on) {
+  if (chosen || on === crestHovered) return;
+  crestHovered = on;
+  crest.setHover(on);
+  if (on) {
+    ui.labelElement.textContent = "The Crest of the House";
+    ui.labelTitle.textContent = "GitHub";
+    ui.label.style.setProperty("--glow", "#ecc96a");
+    ui.label.classList.add("is-visible");
+    renderer.domElement.style.cursor = "pointer";
+  } else if (!hovered) {
+    ui.label.classList.remove("is-visible");
+    renderer.domElement.style.cursor = "";
+  }
+}
+function chooseCrest() {
+  if (chosen) return;
+  chosen = "crest";
+  const focus = crest.focus.getWorldPosition(new THREE.Vector3());
+  hoverLight.color.set("#ffd68a");
+  hoverLight.position.copy(focus).add(new THREE.Vector3(0, 0, 1.2));
+  flyTo(focus.clone().add(new THREE.Vector3(0, -0.2, 2.6)), focus, 1.1);
+  document.body.classList.add("is-chosen");
+  document.body.style.setProperty("--glow", "#ecc96a");
+  setTimeout(() => { window.location.href = GITHUB_URL; }, reduceMotion ? 150 : 1250);
+}
 let pointerDriven = false;
 
 function placeLabel(event) {
@@ -235,15 +270,23 @@ function choose(sw) {
 }
 
 renderer.domElement.addEventListener("pointermove", (e) => {
-  if (e.pointerType === "mouse") { pointerDriven = true; placeLabel(e); setHovered(pick(e)); }
+  if (e.pointerType === "mouse") {
+    pointerDriven = true;
+    placeLabel(e);
+    const sw = pick(e);
+    const onCrest = pickCrest();
+    setHovered(onCrest ? null : sw);
+    setCrestHover(onCrest);
+  }
 });
 renderer.domElement.addEventListener("pointerdown", (e) => { downAt = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener("pointerup", (e) => {
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
   const sw = pick(e);
-  if (sw) { placeLabel(e); choose(sw); }
+  if (pickCrest()) { placeLabel(e); setCrestHover(true); chooseCrest(); }
+  else if (sw) { placeLabel(e); choose(sw); }
 });
-renderer.domElement.addEventListener("pointerleave", () => setHovered(null));
+renderer.domElement.addEventListener("pointerleave", () => { setHovered(null); setCrestHover(false); });
 
 // double-click anything to walk up and inspect it
 renderer.domElement.addEventListener("dblclick", (e) => {
@@ -273,6 +316,8 @@ document.querySelectorAll("#blade-roll a").forEach((a) => {
 window.addEventListener("pageshow", (e) => {
   if (!e.persisted) return;
   chosen = null;
+  crestHovered = false;
+  crest.setHover(false);
   document.body.classList.remove("is-chosen");
   swords.forEach((s) => { s.target = 0.35; s.liftTarget = 0; });
   setHovered(null);
