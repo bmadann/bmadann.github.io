@@ -10,7 +10,7 @@ import { rng, makeCanvas, canvasTexture, woodGrain, speckle, taperTube, v3, TAU 
 
 export const TABLE_R = 2.3;
 export const TABLE_TOP = 0.95;
-export const SWORD_RING = 1.55;
+export const SWORD_RING = 1.3;
 
 const FONT_URL = "https://cdn.jsdelivr.net/npm/@fontsource/pirata-one/files/pirata-one-latin-400-normal.woff";
 

@@ -64,8 +64,8 @@ scene.fog = new THREE.FogExp2(0x0a0608, 0.018);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.05, 60);
 const HOME = small
-  ? { pos: new THREE.Vector3(0, 4.2, 7.8), target: new THREE.Vector3(0, 1.2, -0.2) }
-  : { pos: new THREE.Vector3(0, 2.75, 5.3), target: new THREE.Vector3(0, 1.45, -0.6) };
+  ? { pos: new THREE.Vector3(0, 5.2, 8.8), target: new THREE.Vector3(0, 1.4, -0.2) }
+  : { pos: new THREE.Vector3(0, 5.0, 7.6), target: new THREE.Vector3(0, 1.35, -0.3) };
 camera.position.copy(HOME.pos);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -95,9 +95,10 @@ scene.add(table);
 
 const swords = SWORDS.map((s, i) => {
   const glow = ELEMENTS[s.element].glow;
-  const sw = createSword(s.element, glow, i);
   const a = (i / SWORDS.length) * TAU;
-  sw.root.position.set(Math.sin(a) * SWORD_RING, TABLE_TOP, -Math.cos(a) * SWORD_RING);
+  const outward = new THREE.Vector3(Math.sin(a), 0, -Math.cos(a));
+  const sw = createSword(s.element, glow, i, outward);
+  sw.root.position.set(outward.x * SWORD_RING, TABLE_TOP, outward.z * SWORD_RING);
   sw.index = i;
   scene.add(sw.root);
   return sw;
@@ -105,7 +106,7 @@ const swords = SWORDS.map((s, i) => {
 const hitTargets = swords.map((s) => s.hit);
 
 // light that follows the sword under the cursor
-const hoverLight = new THREE.PointLight(0xffffff, 0, 3.5, 1.5);
+const hoverLight = new THREE.PointLight(0xffffff, 0, 4.5, 1.5);
 scene.add(hoverLight);
 
 // reflections: capture the lit hall once so polished metal has something to mirror
@@ -183,19 +184,21 @@ let downAt = null;
 
 function setHovered(sw) {
   if (chosen || sw === hovered) return;
-  if (hovered) hovered.target = 0.35;
+  if (hovered) { hovered.target = 0.35; hovered.liftTarget = 0; }
   hovered = sw;
   document.querySelectorAll("#blade-roll a").forEach((a) => a.classList.toggle("is-active", sw && Number(a.dataset.index) === sw.index));
   if (sw) {
     sw.target = 1.25;
+    sw.liftTarget = 1;
     const s = SWORDS[sw.index];
     ui.labelElement.textContent = `The Blade of ${ELEMENTS[s.element].label}`;
     ui.labelTitle.textContent = s.title;
     ui.label.style.setProperty("--glow", ELEMENTS[s.element].glow);
     ui.label.classList.toggle("is-visible", pointerDriven);
     hoverLight.color.set(ELEMENTS[s.element].glow);
-    sw.root.getWorldPosition(hoverLight.position);
-    hoverLight.position.y += 0.7;
+    // light the sword from just outside it, never from inside the blade
+    sw.focus.getWorldPosition(hoverLight.position);
+    hoverLight.position.add(hoverLight.position.clone().setY(0).normalize().multiplyScalar(0.9)).add(new THREE.Vector3(0, 0.4, 0));
     renderer.domElement.style.cursor = "pointer";
   } else {
     ui.label.classList.remove("is-visible");
@@ -223,9 +226,9 @@ function choose(sw) {
   sw.target = 3;
   sw.shockStart = clock.elapsedTime;
   const s = SWORDS[sw.index];
-  const base = sw.root.getWorldPosition(new THREE.Vector3());
-  const outward = base.clone().setY(0).normalize();
-  flyTo(base.clone().add(outward.multiplyScalar(1.4)).setY(TABLE_TOP + 1.2), base.clone().setY(TABLE_TOP + 0.75), 1.1);
+  const focus = sw.focus.getWorldPosition(new THREE.Vector3());
+  const outward = focus.clone().setY(0).normalize();
+  flyTo(focus.clone().add(outward.multiplyScalar(2.2)).add(new THREE.Vector3(0, 0.6, 0)), focus, 1.1);
   document.body.classList.add("is-chosen");
   document.body.style.setProperty("--glow", ELEMENTS[s.element].glow);
   setTimeout(() => { window.location.href = s.href; }, reduceMotion ? 150 : 1250);
@@ -271,7 +274,7 @@ window.addEventListener("pageshow", (e) => {
   if (!e.persisted) return;
   chosen = null;
   document.body.classList.remove("is-chosen");
-  swords.forEach((s) => (s.target = 0.35));
+  swords.forEach((s) => { s.target = 0.35; s.liftTarget = 0; });
   setHovered(null);
   flyTo(HOME.pos, HOME.target, 0.01);
 });
@@ -299,10 +302,12 @@ function frame() {
 
   flames.forEach((m) => (m.uniforms.uTime.value = t));
   animated.forEach((fn) => fn(t, dt));
-  swords.forEach((s) => updateSword(s, t, dt));
+  let moving = false;
+  swords.forEach((s) => { if (updateSword(s, t, dt, camera)) moving = true; });
+  if (moving) renderer.shadowMap.needsUpdate = true;
 
   const active = chosen || hovered;
-  const want = active ? (chosen ? 14 : 5) : 0;
+  const want = active ? (chosen ? 9 : 2.5) : 0;
   hoverLight.intensity += (want - hoverLight.intensity) * Math.min(1, dt * 5);
 
   composer.render(dt);
@@ -319,6 +324,8 @@ if (params.get("cam")) {
   const v = params.get("cam").split(",").map(Number);
   if (v.length === 6 && v.every(Number.isFinite)) { camera.position.set(v[0], v[1], v[2]); controls.target.set(v[3], v[4], v[5]); }
 }
+// ?blade=<index> presents one sword, drawn from the table
+if (swords[Number(params.get("blade"))]) setHovered(swords[Number(params.get("blade"))]);
 
 ui.loader.classList.add("is-done");
 setTimeout(() => ui.loader.remove(), 1200);

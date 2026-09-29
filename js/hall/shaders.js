@@ -87,7 +87,7 @@ export function auraMaterial(color, { speed = 1, scale = 1, style = 0 } = {}) {
         else if (uStyle < 2.5) n = fbm(p * 1.5 + vec2(t * 0.2, t * 0.3));           // drifting (space, glass)
         else                   n = smoothstep(0.5, 0.75, fbm(p * 2.0 - vec2(0.0, t * 2.0)));  // crackling (earth, machinery)
         float wisps = smoothstep(0.35, 0.95, n);
-        float a = shape * (0.2 + wisps) * uIntensity * 0.6;
+        float a = shape * (0.2 + wisps) * min(uIntensity, 1.0) * 0.45;
         vec3 col = mix(uColor, vec3(1.0), smoothstep(0.8, 1.0, n) * 0.35);
         gl_FragColor = vec4(col * a, a);
       }`,
@@ -95,45 +95,6 @@ export function auraMaterial(color, { speed = 1, scale = 1, style = 0 } = {}) {
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     side: THREE.DoubleSide,
-  });
-}
-
-/** Glowing rune circle where a sword pierces the table. */
-export function runeCircleMaterial(color, runes = 9) {
-  return new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(color) }, uIntensity: { value: 0.35 }, uRunes: { value: runes } },
-    vertexShader: UV_VERT,
-    fragmentShader: /* glsl */ `
-      ${NOISE}
-      uniform float uTime, uIntensity, uRunes;
-      uniform vec3 uColor;
-      varying vec2 vUv;
-      float ring(float r, float c, float w) { return smoothstep(w, 0.0, abs(r - c)); }
-      void main() {
-        vec2 p = vUv * 2.0 - 1.0;
-        float r = length(p);
-        float a = atan(p.y, p.x);
-        float rot = a + uTime * 0.35;
-        float rot2 = a - uTime * 0.22;
-        float v = ring(r, 0.92, 0.02) + ring(r, 0.80, 0.012) * 0.8 + ring(r, 0.52, 0.015) * 0.7;
-        // rune glyphs in the outer band
-        float seg = fract(rot * uRunes * 2.0 / 6.2831853);
-        float glyphId = floor(rot * uRunes * 2.0 / 6.2831853);
-        float g = step(0.5, hash(vec2(glyphId, floor(seg * 4.0)))) * step(0.15, seg) * step(seg, 0.85);
-        v += g * smoothstep(0.03, 0.0, abs(r - 0.86) - 0.03) * 0.9;
-        // spokes in the inner band
-        float spokes = smoothstep(0.08, 0.0, abs(fract(rot2 * 6.0 / 6.2831853) - 0.5) - 0.44);
-        v += spokes * step(0.52, r) * step(r, 0.8) * 0.35;
-        // inner sigil star
-        float star = smoothstep(0.02, 0.0, abs(r - 0.34 - 0.08 * cos(a * 5.0 + uTime)));
-        v += star * 0.8;
-        float glow = exp(-r * 3.0) * 0.35;
-        float alpha = (v + glow) * step(r, 1.0) * uIntensity;
-        gl_FragColor = vec4(uColor * alpha * 1.6, alpha);
-      }`,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
   });
 }
 
@@ -163,7 +124,7 @@ export function shockwaveMaterial(color) {
  * Particle systems. Motion is computed entirely on the GPU from a per-particle
  * random seed; `mode` picks the behaviour for each element.
  */
-export const PARTICLE_MODES = { fire: 0, water: 1, wind: 2, wood: 3, earth: 4, space: 5, machinery: 6, glass: 7, time: 8, embers: 9, dust: 10 };
+export const PARTICLE_MODES = { fire: 0, water: 1, wind: 2, wood: 3, earth: 4, space: 5, machinery: 6, glass: 7, time: 8, embers: 9, dust: 10, steam: 11, fireflies: 12 };
 
 export function particleMaterial(mode, color, { size = 1 } = {}) {
   return new THREE.ShaderMaterial({
@@ -237,9 +198,9 @@ export function particleMaterial(mode, color, { size = 1 } = {}) {
           life = 1.0 - tw * 0.6;
         #elif MODE == 6
           life = fract(seed.x + t * 0.9 * speed);
-          vec3 dir = normalize(vec3(seed.y - 0.5, 0.6 + seed.z * 0.6, seed.w - 0.5));
-          p = vec3(0.0, 1.0, 0.0) + dir * life * 0.5;
-          p.y -= life * life * 0.6;
+          vec3 dir = normalize(vec3(-0.6 - seed.y * 0.6, seed.z - 0.3, seed.w - 0.5));
+          p = vec3(0.0, (seed.w - 0.5) * 1.1, 0.0) + dir * life * 0.45;
+          p.y -= life * life * 0.35;
           vColor = mix(vec3(1.0, 0.95, 0.7), vec3(1.0, 0.45, 0.05), life);
           s = (1.0 - life) * 0.9;
         #elif MODE == 7
@@ -264,6 +225,19 @@ export function particleMaterial(mode, color, { size = 1 } = {}) {
           p.x += sin(t * 2.0 + seed.w * 30.0) * 0.18 * life;
           vColor = mix(vec3(1.0, 0.8, 0.3), vec3(1.0, 0.25, 0.02), life);
           s = (1.0 - life) * 1.2;
+        #elif MODE == 11
+          life = fract(seed.x + t * 0.3 * speed);
+          p = vec3((seed.y - 0.5) * 0.05 + life * (seed.z - 0.5) * 0.25, life * 0.7, (seed.w - 0.5) * 0.05 + life * (seed.y - 0.5) * 0.2);
+          vColor = vec3(0.85, 0.85, 0.9);
+          s = 1.0 + life * 3.5;
+        #elif MODE == 12
+          float a = seed.x * TAU + t * (0.2 + seed.y * 0.3);
+          float r = 0.2 + 0.45 * seed.z;
+          p = vec3(cos(a) * r + sin(t * 0.7 + seed.w * 9.0) * 0.08, 0.1 + seed.y * 1.8 + sin(t * 0.9 + seed.x * 20.0) * 0.12, sin(a) * r);
+          float blink = smoothstep(0.3, 1.0, sin(t * (1.2 + seed.w * 2.0) + seed.z * 30.0));
+          vColor = mix(vec3(0.7, 1.0, 0.3), vec3(1.0, 0.95, 0.4), seed.w);
+          s = 0.6 + blink;
+          life = 1.0 - blink;
         #else
           float a = t * 0.02 + seed.x * TAU;
           p = vec3((seed.y - 0.5) * 2.0 + sin(t * 0.1 + seed.w * 9.0) * 0.1, seed.z, (seed.w - 0.5) * 2.0);
@@ -275,7 +249,7 @@ export function particleMaterial(mode, color, { size = 1 } = {}) {
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mv;
         gl_PointSize = min(uSize * s * (60.0 / -mv.z) * (0.7 + uIntensity * 0.5), 26.0 * uSize);
-        #if MODE == 4 || MODE == 5 || MODE == 7 || MODE == 10
+        #if MODE == 4 || MODE == 5 || MODE == 7 || MODE == 10 || MODE == 12
           vAlpha = (1.0 - life * 0.8) * clamp(uIntensity * 1.4, 0.3, 1.5);
         #else
           vAlpha = sin(clamp(life, 0.0, 1.0) * 3.14159) * clamp(uIntensity * 1.4, 0.3, 1.5);
@@ -292,6 +266,8 @@ export function particleMaterial(mode, color, { size = 1 } = {}) {
         float a;
         #if MODE == 3
           a = smoothstep(1.0, 0.7, length(p * vec2(1.0, 2.4)));        // leaf
+        #elif MODE == 11
+          a = smoothstep(1.0, 0.0, length(p)) * 0.35;                  // steam puff
         #elif MODE == 7
           a = max(smoothstep(0.18, 0.0, abs(p.x)) * smoothstep(1.0, 0.0, abs(p.y)),
                   smoothstep(0.18, 0.0, abs(p.y)) * smoothstep(1.0, 0.0, abs(p.x)));  // glint
@@ -379,5 +355,151 @@ export function nightSkyMaterial() {
         col = mix(col, vec3(0.16, 0.18, 0.26) + exp(-d * 5.0) * 0.4, clouds * 0.75);
         gl_FragColor = vec4(col * 1.4, 1.0);
       }`,
+  });
+}
+
+/**
+ * Element sigil drawn on the table around each sword, one design per element:
+ * 0 earth cracks · 1 wind spiral · 2 machinery gear · 3 water ripples · 4 fire ring
+ * 5 glass prism star · 6 wood bloom · 7 space vortex · 8 time clock face
+ */
+export const SIGIL_STYLE = { earth: 0, wind: 1, machinery: 2, water: 3, fire: 4, glass: 5, wood: 6, space: 7, time: 8 };
+
+export function sigilMaterial(style, color) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(color) }, uIntensity: { value: 0.35 }, uStyle: { value: style } },
+    vertexShader: UV_VERT,
+    fragmentShader: /* glsl */ `
+      ${NOISE}
+      uniform float uTime, uIntensity, uStyle;
+      uniform vec3 uColor;
+      varying vec2 vUv;
+      const float TAU = 6.2831853;
+      float ring(float r, float c, float w) { return smoothstep(w, 0.0, abs(r - c)); }
+      void main() {
+        vec2 p = vUv * 2.0 - 1.0;
+        float r = length(p), a = atan(p.y, p.x), t = uTime;
+        float v = 0.0;
+        vec3 col = uColor;
+        if (uStyle < 0.5) {            // earth: radiating glowing fissures
+          float n = noise(vec2(a * 6.0, r * 3.0));
+          float spokes = abs(fract(a / TAU * 13.0 + n * 0.35) - 0.5);
+          v = smoothstep(0.05, 0.0, spokes - 0.01) * smoothstep(1.0, 0.25, r) * step(0.12, r);
+          v *= 0.6 + 0.4 * sin(t * 2.0 + r * 12.0);
+          v += ring(r, 0.18, 0.04) * 0.8 + ring(r, 0.95, 0.02) * 0.5;
+        } else if (uStyle < 1.5) {     // wind: rotating spiral arms
+          float arm = sin(a * 3.0 + log(r + 0.01) * 6.0 - t * 3.0);
+          v = smoothstep(0.7, 1.0, arm) * smoothstep(1.0, 0.15, r) + ring(r, 0.93, 0.015) * 0.6;
+          col = mix(col, vec3(1.0), 0.4);
+        } else if (uStyle < 2.5) {     // machinery: toothed gear ring and spokes
+          float ra = a + t * 0.4;
+          float teeth = step(0.5, fract(ra / TAU * 24.0));
+          v = step(0.78, r) * step(r, 0.84 + teeth * 0.08) + ring(r, 0.5, 0.02);
+          v += smoothstep(0.04, 0.0, abs(fract((a - t * 0.6) / TAU * 6.0) - 0.5) - 0.46) * step(r, 0.5) * step(0.12, r);
+          v += ring(r, 0.12, 0.03);
+        } else if (uStyle < 3.5) {     // water: expanding ripples
+          for (int i = 0; i < 4; i++) {
+            float ph = fract(t * 0.35 + float(i) * 0.25);
+            v += ring(r, ph * 0.95, 0.035) * (1.0 - ph);
+          }
+          col = mix(col, vec3(0.8, 1.0, 1.0), 0.3);
+        } else if (uStyle < 4.5) {     // fire: flickering ember crown
+          float n = fbm(vec2(a * 3.0, t * 1.5));
+          float edge = 0.62 + n * 0.3;
+          v = smoothstep(0.08, 0.0, abs(r - edge)) * 1.2 + smoothstep(edge, 0.0, r) * 0.25 * n;
+          col = mix(vec3(1.0, 0.25, 0.02), vec3(1.0, 0.8, 0.3), n);
+        } else if (uStyle < 5.5) {     // glass: rotating six-point prism star, rainbow tinted
+          float ra = a + t * 0.25;
+          float k = cos(3.0 * ra);
+          float star = abs(r - (0.55 + 0.3 * k));
+          v = smoothstep(0.03, 0.0, star) + ring(r, 0.92, 0.012) * 0.7;
+          col = 0.6 + 0.4 * cos(TAU * (a / TAU + t * 0.1 + vec3(0.0, 0.33, 0.67)));
+        } else if (uStyle < 6.5) {     // wood: blooming petals
+          float petal = abs(cos(a * 4.0 + t * 0.2)) * 0.7 * (0.9 + 0.1 * sin(t));
+          v = smoothstep(0.05, 0.0, abs(r - petal)) * step(0.1, r) + ring(r, 0.85, 0.02) * 0.6;
+          v += step(0.8, noise(p * 14.0)) * step(0.72, r) * step(r, 0.98) * 0.6;
+        } else if (uStyle < 7.5) {     // space: accretion vortex around a black core
+          float swirl = fbm(vec2(a * 2.0 + r * 6.0 - t * 1.2, r * 4.0));
+          v = smoothstep(0.2, 0.55, r) * smoothstep(1.0, 0.5, r) * (0.3 + swirl);
+          v += ring(r, 0.22, 0.03) * 1.5;
+          v *= step(0.19, r);
+          col = mix(uColor, vec3(1.0, 0.7, 1.0), swirl * 0.6);
+        } else {                        // time: clock face with sweeping hands
+          float ticks = smoothstep(0.04, 0.0, abs(fract(a / TAU * 12.0 + 0.5) - 0.5) - 0.02) * step(0.78, r) * step(r, 0.9);
+          float hand1 = smoothstep(0.02, 0.0, abs(sin(a - t * 0.5)) * r) * step(r, 0.7) * step(0.0, cos(a - t * 0.5));
+          float hand2 = smoothstep(0.015, 0.0, abs(sin(a - t * 0.06)) * r) * step(r, 0.45) * step(0.0, cos(a - t * 0.06));
+          v = ticks + hand1 + hand2 + ring(r, 0.95, 0.015) + ring(r, 0.7, 0.008) * 0.5;
+        }
+        float alpha = v * step(r, 1.0) * uIntensity;
+        gl_FragColor = vec4(col * alpha * 1.5, alpha);
+      }`,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+}
+
+/** Banded energy streaming along a tube (wind currents, water streams). */
+export function ribbonMaterial(color, { speed = 1.2, bands = 4, strength = 0.5 } = {}) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uIntensity: { value: 0.35 }, uColor: { value: new THREE.Color(color) }, uSpeed: { value: speed }, uBands: { value: bands }, uStrength: { value: strength } },
+    vertexShader: UV_VERT,
+    fragmentShader: /* glsl */ `
+      ${NOISE}
+      uniform float uTime, uIntensity, uSpeed, uBands, uStrength;
+      uniform vec3 uColor;
+      varying vec2 vUv;
+      void main() {
+        float f = fract(vUv.x * uBands - uTime * uSpeed);
+        float band = smoothstep(0.0, 0.45, f) * smoothstep(1.0, 0.55, f);
+        float n = noise(vec2(vUv.x * 30.0 - uTime * 3.0, vUv.y * 4.0));
+        float a = band * (0.6 + 0.4 * n) * smoothstep(0.0, 0.08, vUv.x) * smoothstep(1.0, 0.85, vUv.x) * uStrength * uIntensity;
+        gl_FragColor = vec4(mix(uColor, vec3(1.0), n * 0.3) * a, a);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  });
+}
+
+/** A swirling nebula cloud on a camera-facing quad. */
+export function nebulaMaterial(color) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uIntensity: { value: 0.35 }, uColor: { value: new THREE.Color(color) } },
+    vertexShader: UV_VERT,
+    fragmentShader: /* glsl */ `
+      ${NOISE}
+      uniform float uTime, uIntensity;
+      uniform vec3 uColor;
+      varying vec2 vUv;
+      void main() {
+        vec2 p = vUv * 2.0 - 1.0;
+        float r = length(p);
+        float ang = atan(p.y, p.x) + uTime * 0.05 + r * 1.5;
+        vec2 q = vec2(cos(ang), sin(ang)) * r * 2.5;
+        float n = fbm(q + uTime * 0.03);
+        float n2 = fbm(q * 2.0 - uTime * 0.02 + 5.0);
+        float a = smoothstep(1.0, 0.1, r) * smoothstep(0.35, 0.9, n) * 0.55 * uIntensity;
+        vec3 col = mix(uColor, vec3(1.0, 0.45, 0.8), n2);
+        float stars = step(0.985, noise(vUv * 160.0)) * smoothstep(1.0, 0.3, r);
+        gl_FragColor = vec4(col * a + stars * uIntensity, a + stars * uIntensity * 0.5);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  });
+}
+
+/** A refracted rainbow ray fanning out from a crystal. */
+export function prismRayMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uIntensity: { value: 0.35 } },
+    vertexShader: UV_VERT,
+    fragmentShader: /* glsl */ `
+      uniform float uTime, uIntensity;
+      varying vec2 vUv;
+      void main() {
+        vec3 rainbow = 0.55 + 0.45 * cos(6.2831853 * (vUv.x + vec3(0.0, 0.33, 0.67)));
+        float a = smoothstep(0.0, 0.3, vUv.x) * smoothstep(1.0, 0.7, vUv.x) * smoothstep(1.0, 0.0, vUv.y) * (0.5 + 0.5 * sin(uTime * 2.0 + vUv.y * 6.0));
+        a *= 0.35 * uIntensity;
+        gl_FragColor = vec4(rainbow * a, a);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
   });
 }
