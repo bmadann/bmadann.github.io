@@ -3,37 +3,68 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Benjamin Madan · The Round Table</title>
-  <meta name="description" content="The portfolio of Benjamin Madan. Nine elemental blades lead to his resume, LinkedIn, projects and class work.">
+  <title>Benjamin Madan · The Great Hall</title>
+  <meta name="description" content="The portfolio of Benjamin Madan. Nine elemental blades, planted in a round table in a castle hall, lead to his resume, LinkedIn, projects and class work.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/realm.css">
-  <link rel="stylesheet" href="css/table.css">
+  <link rel="stylesheet" href="css/hall.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
-<body class="home">
-  <img class="banner banner--left" src="assets/banner-purple.svg" alt="">
-  <img class="banner banner--right" src="assets/banner-crimson.svg" alt="">
+<body>
+  <h1 class="visually-hidden">The Portfolio of Benjamin Madan</h1>
+  <div id="stage" class="stage" aria-hidden="true"></div>
 
-  <main class="hall">
-    <h1 class="visually-hidden">The Portfolio of Benjamin Madan</h1>
-    <div id="round-table" class="round-table"></div>
+  <div id="loader" class="loader" role="status">
+    <p class="loader-kicker">The Portfolio of</p>
+    <p class="loader-name">Benjamin Madan</p>
+    <p class="loader-text">The doors of the great hall are opening…</p>
+    <div class="loader-bar"><span></span></div>
+  </div>
 
-    <nav class="blade-roll-wrap" aria-label="The nine blades">
-      <h2 class="roll-heading">The Nine Blades</h2>
-      <ul id="blade-roll" class="blade-roll"></ul>
-    </nav>
-  </main>
+  <div id="blade-label" class="blade-label" aria-hidden="true">
+    <span class="label-element"></span>
+    <span class="label-title"></span>
+  </div>
 
-  <footer class="site-footer">
-    Benjamin Madan
-    <span class="sep">✦</span>
-    <a href="https://github.com/bmadann">GitHub</a>
-  </footer>
+  <nav class="viewpoints" aria-label="Viewpoints">
+    <button type="button" data-view="table">The Table</button>
+    <button type="button" data-view="above">From Above</button>
+    <button type="button" data-view="hearth">The Hearth</button>
+    <button type="button" data-view="window">The Window</button>
+    <button type="button" data-view="armour">The Guard</button>
+  </nav>
+
+  <details class="roll-panel" open>
+    <summary>The Nine Blades</summary>
+    <ul id="blade-roll" class="blade-roll"></ul>
+  </details>
+
+  <p id="hint" class="hint">Drag to look around · Scroll to zoom · Double-click to inspect · Choose a sword to follow it</p>
+  <div class="chosen-flash" aria-hidden="true"></div>
+
+  <noscript>
+    <ul class="blade-roll">
+      <li><a href="resume.html">Resume</a></li>
+      <li><a href="project.html?p=data-governance">Data Governance</a></li>
+      <li><a href="project.html?p=spotdl">SpotDL</a></li>
+      <li><a href="project.html?p=max-synthesis">Max/MSP Synthesis</a></li>
+      <li><a href="project.html?p=instagram-clone">Instagram Clone</a></li>
+      <li><a href="project.html?p=react-typescript">React + TypeScript</a></li>
+      <li><a href="project.html?p=group-portfolio">Group Portfolio</a></li>
+      <li><a href="classwork.html">Class Work</a></li>
+    </ul>
+  </noscript>
 
   <script src="js/data.js"></script>
-  <script src="js/swords.js"></script>
-  <script src="js/table.js"></script>
+  <script type="module" src="js/hall/main.js"></script>
 </body>
 </html>
