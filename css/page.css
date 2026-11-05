@@ -383,3 +383,71 @@ code { font-family: var(--font-code); font-size: .86em; }
 
 .code-bubble { border-radius: 10px; }
 .code-bubble .code-body { max-height: 60vh; }
+
+/* -------------------------------------------------------- classwork tabs */
+
+.work-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin: 0 0 2rem; }
+.work-tab {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: .85rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--parchment-dim);
+  background: rgba(12, 6, 10, .8);
+  border: 1px solid rgba(201, 161, 59, .35);
+  border-radius: 2px;
+  padding: .65rem 1.3rem;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+}
+.work-tab:hover { color: var(--parchment); border-color: var(--gold); }
+.work-tab[aria-selected="true"] {
+  color: var(--ink);
+  background: linear-gradient(180deg, #f6df9a, #c9a13b 60%, #9c7420);
+  border-color: #5a4210;
+}
+.work-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .7rem; margin-bottom: 2rem; }
+
+/* ------------------------------------------------------ rendered notebook */
+
+.notebook { max-width: 900px; margin: 0 auto; }
+.nb-md { font-size: 1.1rem; overflow-wrap: anywhere; }
+.nb-md h1, .nb-md h2, .nb-md h3 { font-family: var(--font-caps); font-weight: 700; color: var(--gold-bright); line-height: 1.25; }
+.nb-md h1 { font-size: 1.5rem; margin: 0 0 .6rem; }
+.nb-md h2 { font-size: 1.25rem; margin: 2.6rem 0 .6rem; padding-bottom: .35rem; border-bottom: 1px solid var(--gold-dark); }
+.nb-md h3 { font-size: 1.05rem; margin: 1.8rem 0 .5rem; }
+.nb-md p, .nb-md ul, .nb-md ol { margin: 0 0 .9rem; }
+.nb-md code {
+  padding: .05em .35em;
+  background: rgba(0, 0, 0, .4);
+  border: 1px solid rgba(201, 161, 59, .25);
+  border-radius: 2px;
+  color: var(--gold-bright);
+}
+.nb-md blockquote { margin: 0 0 1rem; padding: .5rem 1rem; border-left: 3px solid var(--accent); background: rgba(0, 0, 0, .25); }
+.nb-md blockquote p:last-child { margin-bottom: 0; }
+.nb-md table { display: block; overflow-x: auto; border-collapse: collapse; margin: 0 0 1.2rem; font-size: 1rem; }
+.nb-md th, .nb-md td { padding: .4rem .7rem; border: 1px solid rgba(201, 161, 59, .3); text-align: left; overflow-wrap: normal; }
+.nb-md th { font-family: var(--font-caps); font-size: .8rem; letter-spacing: .08em; color: var(--gold-bright); background: rgba(0, 0, 0, .3); }
+.nb-md details { margin: 0 0 1rem; padding: .6rem .9rem; border: 1px solid rgba(201, 161, 59, .3); background: rgba(0, 0, 0, .25); }
+.nb-md summary, .nb-fold > summary { cursor: pointer; color: var(--gold-bright); }
+.nb-md .katex-display { overflow-x: auto; overflow-y: hidden; padding: .3rem 0; }
+.nb-cell { margin: 0 0 1.4rem; }
+.nb-fold { margin: 0 0 .6rem; }
+.nb-fold > summary { font-family: var(--font-code); font-size: .85rem; padding: .55rem .8rem; border: 1px solid rgba(201, 161, 59, .4); background: rgba(12, 6, 10, .6); }
+.nb-fold[open] > summary { margin-bottom: .5rem; }
+.nb-outputs { margin-top: .5rem; }
+.nb-text {
+  margin: 0 0 .5rem;
+  padding: .7rem .9rem;
+  overflow-x: auto;
+  font-family: var(--font-code);
+  font-size: .8rem;
+  line-height: 1.5;
+  color: var(--parchment);
+  background: rgba(0, 0, 0, .35);
+  border-left: 2px solid var(--gold-dark);
+}
+.nb-figure { display: block; max-width: 100%; height: auto; margin: 0 auto .6rem; padding: .4rem; background: #fff; border: 1px solid var(--gold-dark); border-radius: 2px; }
+.nb-note { font-style: italic; color: var(--parchment-dim); }

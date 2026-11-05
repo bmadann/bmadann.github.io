@@ -207,13 +207,29 @@ const PROJECTS = {
 };
 
 /*
- * Class work. Every entry is shown in full on classwork.html: an intro, then
- * each section's explanation followed by its code. Section code lives in
- * `dir/<file>` inside this repo and is loaded from there.
+ * Class work. Each entry is a tab on classwork.html (`tab` is its label, and
+ * the first entry opens by default). Files live in `dir` inside this repo.
+ *
+ * An entry is one of two kinds:
+ *   notebook – renders `dir/<notebook>` (.ipynb), under the written piece in
+ *              `dir/<story>` (Markdown), which is left out while it is empty
+ *   sections – an intro, then each section's explanation and its code file
  */
 const CLASSWORK = [
   {
+    id: "project-2",
+    tab: "Project 2",
+    course: "DCS 340 Project II",
+    term: "Fall 2026",
+    title: "Evolving Quantum Circuits",
+    tech: ["Python", "NumPy", "Qiskit", "Matplotlib"],
+    dir: "classwork/project-2",
+    story: "story.md",
+    notebook: "Evolving_Quantum_Circuits.ipynb",
+  },
+  {
     id: "play-and-explore",
+    tab: "Play & Explore",
     course: "Evolutionary Computing",
     term: "Fall 2026",
     title: "Play & Explore: Optimization Methods",

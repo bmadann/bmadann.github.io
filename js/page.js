@@ -222,8 +222,8 @@
     const intro = hero({
       element: "time",
       kicker: "The Blade of Time",
-      title: "Class Work",
-      tagline: "Coursework, assignments and projects from my studies.",
+      title: "Classwork: Evolutionary Computing",
+      tagline: "Projects and coursework from DCS 340.",
     });
 
     if (!CLASSWORK.length) {
@@ -236,11 +236,87 @@
       return;
     }
 
-    main.innerHTML = intro + CLASSWORK.map(classworkMarkup).join("");
-    CLASSWORK.forEach(loadClassworkCode);
+    const tabs = CLASSWORK.map((work) =>
+      `<button class="work-tab" type="button" role="tab" id="tab-${work.id}" aria-controls="panel-${work.id}" data-id="${work.id}">${esc(work.tab)}</button>`).join("");
+    const panels = CLASSWORK.map((work) =>
+      `<div class="work-panel" role="tabpanel" id="panel-${work.id}" aria-labelledby="tab-${work.id}" hidden>${classworkMarkup(work)}</div>`).join("");
+    main.innerHTML = `${intro}<div class="work-tabs" role="tablist" aria-label="Projects">${tabs}</div>${panels}`;
+
+    const tabEls = [...main.querySelectorAll(".work-tab")];
+    const loaded = new Set();
+    function openTab(id, { focus = false } = {}) {
+      CLASSWORK.forEach((work) => {
+        const on = work.id === id;
+        const tab = document.getElementById(`tab-${work.id}`);
+        tab.setAttribute("aria-selected", on);
+        tab.tabIndex = on ? 0 : -1;
+        if (on && focus) tab.focus();
+        document.getElementById(`panel-${work.id}`).hidden = !on;
+      });
+      if (loaded.has(id)) return;
+      loaded.add(id);
+      const work = CLASSWORK.find((w) => w.id === id);
+      if (work.notebook) loadNotebookWork(work); else loadClassworkCode(work);
+    }
+
+    // the address can name a project (#project-2) or a section inside one (#play-and-explore-3)
+    function openFromHash() {
+      const hash = location.hash.slice(1);
+      const work = CLASSWORK.find((w) => hash === w.id || hash.startsWith(`${w.id}-`)) || CLASSWORK[0];
+      openTab(work.id);
+      if (hash && hash !== work.id) document.getElementById(hash)?.scrollIntoView();
+    }
+
+    tabEls.forEach((tab, i) => {
+      tab.addEventListener("click", () => {
+        history.replaceState(null, "", `#${tab.dataset.id}`);
+        openTab(tab.dataset.id);
+      });
+      tab.addEventListener("keydown", (e) => {
+        const dir = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+        if (!dir) return;
+        const next = tabEls[(i + dir + tabEls.length) % tabEls.length];
+        history.replaceState(null, "", `#${next.dataset.id}`);
+        openTab(next.dataset.id, { focus: true });
+      });
+    });
+    window.addEventListener("hashchange", openFromHash);
+    openFromHash();
+  }
+
+  /** A project built around a notebook: an optional written piece, then the notebook itself. */
+  function notebookWorkMarkup(work) {
+    const path = `${work.dir}/${work.notebook}`;
+    const colab = `https://colab.research.google.com/github/${OWNER.github}/${OWNER.github}.github.io/blob/main/${path}`;
+    const kicker = [work.course, work.term].filter(Boolean).map(esc).join(" · ");
+    return `<div id="${work.id}-story"></div>
+      <section class="panel classwork">
+        ${kicker ? `<p class="work-kicker">${kicker}</p>` : ""}
+        <h2 class="panel-title"><span>${esc(work.title)}</span></h2>
+        ${work.tech ? `<ul class="tags work-tags">${work.tech.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+        <div class="work-actions">
+          <a class="btn" href="${colab}">Open in Colab</a>
+          <a class="btn btn-quiet" href="${path}" download>Download notebook</a>
+        </div>
+        <div class="notebook" id="${work.id}-notebook"><p class="code-status">Unsheathing the notebook…</p></div>
+      </section>`;
+  }
+
+  async function loadNotebookWork(work) {
+    const slot = document.getElementById(`${work.id}-notebook`);
+    const paint = (codeEl, gutter, source) => paintCode(codeEl, gutter, source, "python");
+    NotebookView.render(slot, `${work.dir}/${work.notebook}`, { paint, copy: copyText }).catch((err) => {
+      slot.innerHTML = `<p class="code-status">The notebook could not be summoned (${esc(err.message)}).</p>`;
+    });
+    // the written piece appears once story.md has text in it (HTML comments don't count)
+    if (!work.story) return;
+    const res = await fetch(`${work.dir}/${work.story}`).catch(() => null);
+    const source = res && res.ok ? (await res.text()).replace(/<!--[\s\S]*?-->/g, "").trim() : "";
+    if (source) document.getElementById(`${work.id}-story`).innerHTML = panel("The Story", `<div class="tale nb-md">${NotebookView.markdown(source)}</div>`, "classwork");
   }
 
   function classworkMarkup(work) {
+    if (work.notebook) return notebookWorkMarkup(work);
     const kicker = [work.course, work.term].filter(Boolean).map(esc).join(" · ");
     const contents = work.sections.map((sec, i) =>
       `<li><a href="#${work.id}-${i + 1}">${esc(sec.title)}</a></li>`).join("");
@@ -260,7 +336,7 @@
         </div>
       </section>`).join("");
 
-    return `<section class="panel classwork" id="${work.id}">
+    return `<section class="panel classwork">
       ${kicker ? `<p class="work-kicker">${kicker}</p>` : ""}
       <h2 class="panel-title"><span>${esc(work.title)}</span></h2>
       ${work.tagline ? `<p class="work-tagline">${esc(work.tagline)}</p>` : ""}
